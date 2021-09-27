@@ -1,107 +1,49 @@
-import GeoJSON from 'ol/format/GeoJSON';
-import Map from 'ol/Map';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
-import View from 'ol/View';
-import {fromLonLat} from 'ol/proj';
-import VectorLayer from 'ol/layer/Vector';
-import OSM from 'ol/source/OSM';
-import TileLayer from 'ol/layer/Tile';
-import VectorSource from 'ol/source/Vector';
-import Feature from 'ol/Feature';
-import Point from 'ol/geom/Point';
-import {circular} from 'ol/geom/Polygon';
-import Control from 'ol/control/Control';
-import {Fill, Icon, Style} from 'ol/style';
+import GeoTIFF from 'ol/source/GeoTIFF.js';
+import Map from 'ol/Map.js';
+import Projection from 'ol/proj/Projection.js';
+import TileLayer from 'ol/layer/WebGLTile.js';
+import View from 'ol/View.js';
+import {getCenter} from 'ol/extent.js';
 
-
-const source = new VectorSource();
-const layer = new VectorLayer({
-  source: source,
+const projection = new Projection({
+  code: 'EPSG:32721',
+  units: 'm',
 });
-const style = new Style({
-    fill: new Fill({
-      color: 'rgba(0, 0, 255, 0.2)',
-    }),
-    image: new Icon({
-      src: './data/location-heading.svg',
-      imgSize: [27, 55],
-      rotateWithView: true,
-    }),
-  });
-  layer.setStyle(style);
-  
 
-const map = new Map({
-  target: 'map-container',
-  layers: [
-    new TileLayer({
-      source: new OSM(),
-    }),
-  ],
-  view: new View({
-    center: [0, 0],
-    zoom: 2,
-  }),
-});
-map.addLayer(layer);
+// metadata from https://s3.us-west-2.amazonaws.com/sentinel-cogs/sentinel-s2-l2a-cogs/21/H/UB/2021/9/S2B_21HUB_20210915_0_L2A/S2B_21HUB_20210915_0_L2A.json
+const sourceExtent = [300000, 6090260, 409760, 6200020];
 
-navigator.geolocation.watchPosition(
-    function (pos) {
-      const coords = [pos.coords.longitude, pos.coords.latitude];
-      const accuracy = circular(coords, pos.coords.accuracy);
-      source.clear(true);
-      source.addFeatures([
-        new Feature(
-          accuracy.transform('EPSG:4326', map.getView().getProjection())
-        ),
-        new Feature(new Point(fromLonLat(coords))),
-      ]);
-    },
-    function (error) {
-      alert(`ERROR: ${error.message}`);
+const source = new GeoTIFF({
+  sources: [
+    {
+      // near-infrared reflectance
+      url: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/21/H/UB/2021/9/S2B_21HUB_20210915_0_L2A/B08.tif',
+      max: 5000,
     },
     {
-      enableHighAccuracy: true,
-    }
-  );
-
-const locate = document.createElement('div');
-locate.className = 'ol-control ol-unselectable locate';
-locate.innerHTML = '<button title="Locate me">◎</button>';
-locate.addEventListener('click', function () {
-  if (!source.isEmpty()) {
-    map.getView().fit(source.getExtent(), {
-      maxZoom: 18,
-      duration: 500,
-    });
-  }
+      // red reflectance
+      url: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/21/H/UB/2021/9/S2B_21HUB_20210915_0_L2A/B04.tif',
+      max: 5000,
+    },
+    {
+      // green reflectance
+      url: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/21/H/UB/2021/9/S2B_21HUB_20210915_0_L2A/B03.tif',
+      max: 5000,
+    },
+  ],
 });
-map.addControl(
-  new Control({
-    element: locate,
-  })
-);
 
-if (
-    window.DeviceOrientationEvent &&
-    typeof DeviceOrientationEvent.requestPermission === 'function'
-  ) {
-    locate.addEventListener('click', function () {
-      DeviceOrientationEvent.requestPermission()
-        .then(function () {
-          const compass = new Kompas();
-          compass.watch();
-          compass.on('heading', function (heading) {
-            style.getImage().setRotation((Math.PI / 180) * heading);
-          });
-        })
-        .catch(function (error) {
-          alert(`ERROR: ${error.message}`);
-        });
-    });
-  }
+const layer = new TileLayer({
+  source: source,
+});
 
-
-
-  
+new Map({
+  target: 'map-container',
+  layers: [layer],
+  view: new View({
+    projection: projection,
+    center: getCenter(sourceExtent),
+    extent: sourceExtent,
+    zoom: 10,
+  }),
+});
