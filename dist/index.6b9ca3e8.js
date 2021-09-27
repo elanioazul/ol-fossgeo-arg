@@ -478,10 +478,25 @@ var _pointDefault = parcelHelpers.interopDefault(_point);
 var _polygon = require("ol/geom/Polygon");
 var _control = require("ol/control/Control");
 var _controlDefault = parcelHelpers.interopDefault(_control);
+var _style = require("ol/style");
 const source = new _vectorDefault1.default();
 const layer = new _vectorDefault.default({
     source: source
 });
+const style = new _style.Style({
+    fill: new _style.Fill({
+        color: 'rgba(0, 0, 255, 0.2)'
+    }),
+    image: new _style.Icon({
+        src: './data/location-heading.svg',
+        imgSize: [
+            27,
+            55
+        ],
+        rotateWithView: true
+    })
+});
+layer.setStyle(style);
 const map = new _mapDefault.default({
     target: 'map-container',
     layers: [
@@ -526,8 +541,19 @@ locate.addEventListener('click', function() {
 map.addControl(new _controlDefault.default({
     element: locate
 }));
+if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') locate.addEventListener('click', function() {
+    DeviceOrientationEvent.requestPermission().then(function() {
+        const compass = new Kompas();
+        compass.watch();
+        compass.on('heading', function(heading) {
+            style.getImage().setRotation(Math.PI / 180 * heading);
+        });
+    }).catch(function(error) {
+        alert(`ERROR: ${error.message}`);
+    });
+});
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"JacNc","ol/layer/Vector":"2qjJV","ol/source/Vector":"lTwzQ","ol/format/GeoJSON":"4HUel","ol/Map":"76DwP","ol/View":"9RaqO","ol/Feature":"75Tk1","ol/geom/Point":"4ReTD","ol/geom/Polygon":"hoOc8","ol/control/Control":"RgF2j","ol/proj":"hmdWM","ol/source/OSM":"ke6L5","ol/layer/Tile":"1QSoU"}],"JacNc":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"JacNc","ol/layer/Vector":"2qjJV","ol/source/Vector":"lTwzQ","ol/format/GeoJSON":"4HUel","ol/Map":"76DwP","ol/View":"9RaqO","ol/Feature":"75Tk1","ol/geom/Point":"4ReTD","ol/geom/Polygon":"hoOc8","ol/control/Control":"RgF2j","ol/proj":"hmdWM","ol/source/OSM":"ke6L5","ol/layer/Tile":"1QSoU","ol/style":"a8X4g"}],"JacNc":[function(require,module,exports) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a

@@ -12,13 +12,25 @@ import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import {circular} from 'ol/geom/Polygon';
 import Control from 'ol/control/Control';
-
+import {Fill, Icon, Style} from 'ol/style';
 
 
 const source = new VectorSource();
 const layer = new VectorLayer({
   source: source,
 });
+const style = new Style({
+    fill: new Fill({
+      color: 'rgba(0, 0, 255, 0.2)',
+    }),
+    image: new Icon({
+      src: './data/location-heading.svg',
+      imgSize: [27, 55],
+      rotateWithView: true,
+    }),
+  });
+  layer.setStyle(style);
+  
 
 const map = new Map({
   target: 'map-container',
@@ -70,5 +82,26 @@ map.addControl(
     element: locate,
   })
 );
+
+if (
+    window.DeviceOrientationEvent &&
+    typeof DeviceOrientationEvent.requestPermission === 'function'
+  ) {
+    locate.addEventListener('click', function () {
+      DeviceOrientationEvent.requestPermission()
+        .then(function () {
+          const compass = new Kompas();
+          compass.watch();
+          compass.on('heading', function (heading) {
+            style.getImage().setRotation((Math.PI / 180) * heading);
+          });
+        })
+        .catch(function (error) {
+          alert(`ERROR: ${error.message}`);
+        });
+    });
+  }
+
+
 
   
