@@ -3,6 +3,7 @@ import Map from 'ol/Map.js';
 import Projection from 'ol/proj/Projection.js';
 import TileLayer from 'ol/layer/WebGLTile.js';
 import View from 'ol/View.js';
+import colormap from 'colormap';
 import {getCenter} from 'ol/extent.js';
 
 const projection = new Projection({
@@ -46,19 +47,25 @@ const layer = new TileLayer({
       'interpolate',
       ['linear'],
       ndvi,
-      -0.2, // ndvi values <= -0.2 will get the color below
-      [191, 191, 191],
-      0, // ndvi values between -0.2 and 0 will get an interpolated color between the one above and the one below
-      [255, 255, 224],
-      0.2,
-      [145, 191, 82],
-      0.4,
-      [79, 138, 46],
-      0.6,
-      [15, 84, 10],
+      // color ramp for NDVI values
+      ...getColorStops('earth', -0.5, 1, 10, true),
     ],
   },
 });
+
+function getColorStops(name, min, max, steps, reverse) {
+  const delta = (max - min) / (steps - 1);
+  const stops = new Array(steps * 2);
+  const colors = colormap({colormap: name, nshades: steps, format: 'rgba'});
+  if (reverse) {
+    colors.reverse();
+  }
+  for (let i = 0; i < steps; i++) {
+    stops[i * 2] = min + i * delta;
+    stops[i * 2 + 1] = colors[i];
+  }
+  return stops;
+}
 
 new Map({
   target: 'map-container',
