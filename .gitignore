@@ -3,3 +3,5 @@
 /dist
 dist/
 .parcel-cache
+.cache/
+.parcel-cache/
